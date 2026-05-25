@@ -8,6 +8,14 @@ live-commerce-app/
 └── docker/      # Docker 配置
 ```
 
+## Git branches
+```
+main
+└── dev
+    ├── feature/ecommerce
+    └── feature/feed
+```
+详见 [Git 协作约定](docs/conventions/git.md)
 ## Milestones
 - 5.26 周二：壳工程
 - 5.29 周五：技术方案

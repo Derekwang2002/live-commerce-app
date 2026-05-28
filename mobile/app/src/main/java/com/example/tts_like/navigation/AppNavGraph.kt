@@ -9,7 +9,9 @@ import com.example.tts_like.feature.feed.FeedScreen
 import com.example.tts_like.feature.order.OrderConfirmScreen
 import com.example.tts_like.feature.order.OrderDetailScreen
 import com.example.tts_like.feature.order.OrderListScreen
+import com.example.tts_like.feature.payment.PaymentFailedScreen
 import com.example.tts_like.feature.payment.PaymentScreen
+import com.example.tts_like.feature.payment.PaymentSuccessScreen
 
 @Composable
 fun AppNavGraph(navController: NavHostController) {
@@ -36,6 +38,14 @@ fun AppNavGraph(navController: NavHostController) {
         composable(Screen.Payment.route) { backStackEntry ->
             val orderNo = backStackEntry.arguments?.getString("orderNo") ?: ""
             PaymentScreen(navController = navController, orderNo = orderNo)
+        }
+        composable(Screen.PaymentSuccess.route) { backStackEntry ->
+            val orderNo = backStackEntry.arguments?.getString("orderNo") ?: ""
+            PaymentSuccessScreen(navController = navController, orderNo = orderNo)
+        }
+        composable(Screen.PaymentFailed.route) { backStackEntry ->
+            val orderNo = backStackEntry.arguments?.getString("orderNo") ?: ""
+            PaymentFailedScreen(navController = navController, orderNo = orderNo)
         }
     }
 }

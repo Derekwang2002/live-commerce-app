@@ -8,10 +8,12 @@ data class Order(
     val items: List<OrderItem>,
     val totalAmount: Double,
     val discountAmount: Double = 0.0,
+    val shippingAmount: Double = 0.0,
     val payAmount: Double,
     val status: OrderStatus,
     val payExpireAt: Long? = null,
     val paidAt: Long? = null,
+    val coupon: Coupon? = null,
     val createdAt: Long = System.currentTimeMillis(),
 )
 
@@ -53,6 +55,7 @@ data class Payment(
     val paymentNo: String,
     val amount: Double,
     val status: PaymentStatus,
+    val failedReason: String? = null,
     val paidAt: Long? = null,
 )
 

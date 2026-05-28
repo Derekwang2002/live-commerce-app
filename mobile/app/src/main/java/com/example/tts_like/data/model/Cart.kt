@@ -8,13 +8,15 @@ data class CartItem(
     val sku: ProductSku,
     val quantity: Int,
     val selected: Boolean = true,
+    val invalidReason: String? = null,
 )
 
 data class Cart(
     val items: List<CartItem> = emptyList(),
 ) {
-    val selectedItems get() = items.filter { it.selected }
+    val selectedItems get() = items.filter { it.selected && it.invalidReason == null }
     val totalPrice get() = selectedItems.sumOf { it.sku.price * it.quantity }
     val totalCount get() = items.sumOf { it.quantity }
     val selectedCount get() = selectedItems.sumOf { it.quantity }
+    val hasSelectedItems get() = selectedItems.isNotEmpty()
 }

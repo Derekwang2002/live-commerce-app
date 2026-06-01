@@ -15,6 +15,7 @@ import com.example.tts_like.data.model.Payment
 import com.example.tts_like.data.model.PaymentStatus
 import com.example.tts_like.data.model.Product
 import com.example.tts_like.data.model.ProductSku
+import com.example.tts_like.data.model.ProductStatus
 import com.example.tts_like.data.model.VideoContent
 import kotlin.math.max
 import kotlin.math.min
@@ -41,7 +42,10 @@ object CommerceRepository {
     }
 
     fun recommendedProducts(excludedIds: Set<String> = emptySet()): List<Product> {
-        return MockData.products.filterNot { it.id in excludedIds }.take(3)
+        return MockData.products
+            .filter { it.status == ProductStatus.ON_SALE && it.skus.any { sku -> sku.stock > 0 } }
+            .filterNot { it.id in excludedIds }
+            .take(3)
     }
 
     fun bestCouponFor(items: List<CartItem>): Coupon? {
@@ -52,8 +56,8 @@ object CommerceRepository {
             .maxByOrNull { it.discountAmount }
     }
 
-    fun addToCart(product: Product, sku: ProductSku, quantity: Int = 1) {
-        if (sku.stock <= 0) return
+    fun addToCart(product: Product, sku: ProductSku, quantity: Int = 1): ActionResult {
+        validateProductSku(product, sku)?.let { return ActionResult(false, it) }
         val safeQuantity = quantity.coerceIn(1, sku.stock)
         val existing = cart.items.firstOrNull { it.skuId == sku.id }
         val nextItems = if (existing == null) {
@@ -75,6 +79,7 @@ object CommerceRepository {
             }
         }
         cart = cart.copy(items = nextItems.validateStock())
+        return ActionResult(true, "已加入购物车")
     }
 
     fun updateQuantity(cartItemId: String, delta: Int) {
@@ -113,14 +118,16 @@ object CommerceRepository {
         )
     }
 
-    fun checkoutSelectedItems(): Boolean {
+    fun checkoutSelectedItems(): ActionResult {
         val selected = cart.selectedItems
+        if (selected.isEmpty()) return ActionResult(false, "请先选择可结算商品")
+        validateCheckoutItems(selected)?.let { return ActionResult(false, it) }
         pendingCheckoutItems = selected
-        return selected.isNotEmpty()
+        return ActionResult(true)
     }
 
-    fun checkoutBuyNow(product: Product, sku: ProductSku): Boolean {
-        if (sku.stock <= 0) return false
+    fun checkoutBuyNow(product: Product, sku: ProductSku): ActionResult {
+        validateProductSku(product, sku)?.let { return ActionResult(false, it) }
         pendingCheckoutItems = listOf(
             CartItem(
                 id = "buy_now_${sku.id}",
@@ -131,12 +138,13 @@ object CommerceRepository {
                 quantity = 1,
             )
         )
-        return true
+        return ActionResult(true)
     }
 
     fun createOrderFromPending(): Order? {
         val checkoutItems = pendingCheckoutItems
         if (checkoutItems.isEmpty()) return null
+        if (validateCheckoutItems(checkoutItems) != null) return null
 
         val totalAmount = checkoutItems.sumOf { it.sku.price * it.quantity }
         val coupon = bestCouponFor(checkoutItems)
@@ -188,6 +196,7 @@ object CommerceRepository {
 
     fun payOrder(orderNo: String, success: Boolean): Payment? {
         val order = getOrderByNo(orderNo) ?: return null
+        if (order.status != OrderStatus.PENDING_PAYMENT || isPaymentExpired(order)) return null
         val nextStatus = if (success) OrderStatus.PAID else OrderStatus.PENDING_PAYMENT
         val paidAt = if (success) System.currentTimeMillis() else null
         orders = orders.map {
@@ -204,9 +213,51 @@ object CommerceRepository {
         )
     }
 
+    fun expireOrder(orderNo: String) {
+        orders = orders.map { order ->
+            if (order.orderNo == orderNo && order.status == OrderStatus.PENDING_PAYMENT) {
+                order.copy(status = OrderStatus.CANCELLED)
+            } else {
+                order
+            }
+        }
+    }
+
+    fun isPaymentExpired(order: Order): Boolean {
+        return order.payExpireAt?.let { it <= System.currentTimeMillis() } ?: false
+    }
+
+    fun canPay(order: Order): Boolean {
+        return order.status == OrderStatus.PENDING_PAYMENT && !isPaymentExpired(order)
+    }
+
+    fun pendingCheckoutError(): String? {
+        return validateCheckoutItems(pendingCheckoutItems)
+    }
+
+    private fun validateCheckoutItems(items: List<CartItem>): String? {
+        if (items.isEmpty()) return "暂无待结算商品"
+        items.forEach { item ->
+            val currentProduct = getProduct(item.productId) ?: return "商品已不存在，请返回购物车重新选择"
+            val currentSku = currentProduct.skus.find { it.id == item.skuId }
+                ?: return "${item.product.title} 的规格已失效"
+            validateProductSku(currentProduct, currentSku)?.let { return it }
+            if (item.quantity > currentSku.stock) return "${item.product.title} 库存不足，仅剩 ${currentSku.stock} 件"
+            if (item.sku.price != currentSku.price) return "${item.product.title} 价格已变化，请返回购物车重新确认"
+        }
+        return null
+    }
+
+    private fun validateProductSku(product: Product, sku: ProductSku): String? {
+        if (product.status != ProductStatus.ON_SALE) return "${product.title} 已下架"
+        if (sku.stock <= 0) return "${product.title} 当前规格库存不足"
+        return null
+    }
+
     private fun List<CartItem>.validateStock(): List<CartItem> {
         return map { item ->
             val reason = when {
+                item.product.status != ProductStatus.ON_SALE -> "商品已下架"
                 item.sku.stock <= 0 -> "库存不足"
                 item.quantity > item.sku.stock -> "仅剩 ${item.sku.stock} 件"
                 else -> null
@@ -214,4 +265,15 @@ object CommerceRepository {
             item.copy(invalidReason = reason, selected = if (reason == null) item.selected else false)
         }
     }
+
+    internal fun resetForTesting() {
+        cart = Cart()
+        orders = MockData.mockOrders
+        pendingCheckoutItems = emptyList()
+    }
 }
+
+data class ActionResult(
+    val success: Boolean,
+    val message: String? = null,
+)

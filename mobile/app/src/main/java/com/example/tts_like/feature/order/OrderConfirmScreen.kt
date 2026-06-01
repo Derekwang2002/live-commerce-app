@@ -12,6 +12,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +30,8 @@ import com.example.tts_like.navigation.Screen
 fun OrderConfirmScreen(navController: NavController) {
     val pendingItems = CommerceRepository.pendingCheckoutItems
     val previewOrder = buildPreviewOrder()
+    var submitting by remember { mutableStateOf(false) }
+    var submitError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -72,18 +78,34 @@ fun OrderConfirmScreen(navController: NavController) {
             Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("价格明细", fontWeight = FontWeight.SemiBold)
                 PriceDetailSection(previewOrder)
-                Text("优惠已自动选择最优券，减少用户决策成本。", style = MaterialTheme.typography.bodySmall)
+                Text("已自动选择当前可用的最优优惠。", style = MaterialTheme.typography.bodySmall)
             }
         }
 
         Button(
             onClick = {
+                if (submitting) return@Button
+                submitting = true
+                submitError = CommerceRepository.pendingCheckoutError()
+                if (submitError != null) {
+                    submitting = false
+                    return@Button
+                }
                 val order = CommerceRepository.createOrderFromPending()
-                if (order != null) navController.navigate(Screen.Payment.createRoute(order.orderNo))
+                if (order != null) {
+                    navController.navigate(Screen.Payment.createRoute(order.orderNo))
+                } else {
+                    submitError = "订单提交失败，请返回购物车重新确认"
+                    submitting = false
+                }
             },
+            enabled = !submitting,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("提交订单并支付 ${money(previewOrder.payAmount)}")
+            Text(if (submitting) "正在提交..." else "提交订单并支付 ${money(previewOrder.payAmount)}")
+        }
+        submitError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
         Button(onClick = { navController.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
             Text("返回")

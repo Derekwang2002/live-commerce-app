@@ -25,6 +25,7 @@ import com.example.tts_like.navigation.Screen
 @Composable
 fun PaymentFailedScreen(navController: NavController, orderNo: String) {
     val order = CommerceRepository.getOrderByNo(orderNo)
+    val retryAvailable = order?.let(CommerceRepository::canPay) == true
 
     Column(
         modifier = Modifier
@@ -34,7 +35,7 @@ fun PaymentFailedScreen(navController: NavController, orderNo: String) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("支付未完成", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFFB3261E))
-        Text("订单已为你保留，重新支付即可继续。失败页的重点是降低重试成本，避免用户直接流失。")
+        Text(if (retryAvailable) "订单仍为你保留，重新支付即可继续。" else "订单已关闭，可以返回内容流重新选购。")
 
         order?.let {
             Surface(modifier = Modifier.fillMaxWidth(), tonalElevation = 2.dp) {
@@ -46,8 +47,12 @@ fun PaymentFailedScreen(navController: NavController, orderNo: String) {
             }
         }
 
-        Button(onClick = { navController.navigate(Screen.Payment.createRoute(orderNo)) }, modifier = Modifier.fillMaxWidth()) {
-            Text("重新支付")
+        Button(
+            onClick = { navController.navigate(Screen.Payment.createRoute(orderNo)) },
+            enabled = retryAvailable,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(if (retryAvailable) "重新支付" else "订单已关闭")
         }
         OutlinedButton(
             onClick = {

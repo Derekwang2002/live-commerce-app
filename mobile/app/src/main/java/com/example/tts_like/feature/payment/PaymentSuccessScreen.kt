@@ -35,7 +35,7 @@ fun PaymentSuccessScreen(navController: NavController, orderNo: String) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text("支付成功", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color(0xFF216E39))
-        Text("订单已确认，预计 48 小时内发出。成功页继续承接用户安心感和二次转化。")
+        Text("订单已确认，预计 48 小时内发出。")
 
         order?.let {
             Surface(modifier = Modifier.fillMaxWidth(), tonalElevation = 2.dp) {

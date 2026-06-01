@@ -39,6 +39,11 @@ fun OrderListScreen(navController: NavController) {
                     Text("状态：${order.status} · ${shortTime(order.createdAt)}", style = MaterialTheme.typography.bodySmall)
                     Text("${order.items.firstOrNull()?.productTitle ?: "商品"} 等 ${order.items.size} 件")
                     Text("实付款 ${money(order.payAmount)}", fontWeight = FontWeight.Bold)
+                    if (CommerceRepository.canPay(order)) {
+                        Button(onClick = { navController.navigate(Screen.Payment.createRoute(order.orderNo)) }, modifier = Modifier.fillMaxWidth()) {
+                            Text("继续支付")
+                        }
+                    }
                     Button(onClick = { navController.navigate(Screen.OrderDetail.createRoute(order.id)) }, modifier = Modifier.fillMaxWidth()) {
                         Text("查看详情")
                     }

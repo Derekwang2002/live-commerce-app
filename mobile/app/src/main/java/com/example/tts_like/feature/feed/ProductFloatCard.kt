@@ -1,6 +1,5 @@
 package com.example.tts_like.feature.feed
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,13 +18,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.tts_like.data.model.Product
+import com.example.tts_like.data.model.ProductStatus
+import com.example.tts_like.feature.common.ProductImage
 
 @Composable
 fun ProductFloatCard(
@@ -34,6 +33,8 @@ fun ProductFloatCard(
     onQuickAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val available = product.status == ProductStatus.ON_SALE && product.skus.any { it.stock > 0 }
+
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
@@ -45,17 +46,12 @@ fun ProductFloatCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            AsyncImage(
-                model = product.coverUrl,
+            ProductImage(
+                url = product.coverUrl,
                 contentDescription = product.title,
                 modifier = Modifier
                     .size(72.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFFE8F2FF), Color(0xFFFFF1E7))
-                        )
-                    ),
+                    .clip(RoundedCornerShape(8.dp)),
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -79,10 +75,16 @@ fun ProductFloatCard(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                 )
-                val minStock = product.skus.minOfOrNull { it.stock } ?: 0
-                if (minStock <= product.lowStockThreshold) {
+                val availableStock = product.skus.filter { it.stock > 0 }.minOfOrNull { it.stock }
+                if (!available) {
                     Text(
-                        text = "库存紧张，最低仅剩 $minStock 件",
+                        text = if (product.status != ProductStatus.ON_SALE) "商品已下架" else "暂时无货",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFB3261E),
+                    )
+                } else if (availableStock != null && availableStock <= product.lowStockThreshold) {
+                    Text(
+                        text = "库存紧张，最低仅剩 $availableStock 件",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFFB3261E),
                     )
@@ -90,7 +92,7 @@ fun ProductFloatCard(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = onQuickAdd) {
+                Button(onClick = onQuickAdd, enabled = available) {
                     Text("加购")
                 }
                 OutlinedButton(onClick = onOpenDetail) {

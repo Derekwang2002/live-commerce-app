@@ -29,13 +29,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import com.example.tts_like.data.model.Product
 import com.example.tts_like.data.model.ProductSku
+import com.example.tts_like.data.model.ProductStatus
+import com.example.tts_like.feature.common.ProductImage
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -46,8 +46,10 @@ fun ProductDetailSheet(
     onBuyNow: (ProductSku) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var selectedSku by remember(product.id) { mutableStateOf(product.skus.firstOrNull { it.stock > 0 }) }
+    var selectedSku by remember(product.id) { mutableStateOf<ProductSku?>(null) }
+    var selectionAttempted by remember(product.id) { mutableStateOf(false) }
     val selected = selectedSku
+    val productAvailable = product.status == ProductStatus.ON_SALE && product.skus.any { it.stock > 0 }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -62,17 +64,12 @@ fun ProductDetailSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AsyncImage(
-                    model = product.coverUrl,
+                ProductImage(
+                    url = product.coverUrl,
                     contentDescription = product.title,
                     modifier = Modifier
                         .size(96.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(0xFFE8F2FF), Color(0xFFFFF1E7))
-                            )
-                        ),
+                        .clip(RoundedCornerShape(8.dp)),
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Text(product.aiTitle ?: product.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
@@ -131,24 +128,34 @@ fun ProductDetailSheet(
                     Text("收起")
                 }
                 OutlinedButton(
-                    onClick = { selected?.let(onAddToCart) },
-                    enabled = selected != null,
+                    onClick = {
+                        if (selected == null) selectionAttempted = true else onAddToCart(selected)
+                    },
+                    enabled = productAvailable,
                     modifier = Modifier.weight(1f),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                 ) {
                     Text("加购")
                 }
                 Button(
-                    onClick = { selected?.let(onBuyNow) },
-                    enabled = selected != null,
+                    onClick = {
+                        if (selected == null) selectionAttempted = true else onBuyNow(selected)
+                    },
+                    enabled = productAvailable,
                     modifier = Modifier.weight(1f),
                 ) {
                     Text("立即买")
                 }
             }
 
-            if (selected == null) {
-                Text("当前商品暂无可购买规格", color = Color(0xFFB3261E), style = MaterialTheme.typography.bodySmall)
+            if (!productAvailable) {
+                Text(
+                    if (product.status != ProductStatus.ON_SALE) "商品已下架，暂时无法购买" else "当前商品暂无可购买规格",
+                    color = Color(0xFFB3261E),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            } else if (selectionAttempted && selected == null) {
+                Text("请选择规格后再继续", color = Color(0xFFB3261E), style = MaterialTheme.typography.bodySmall)
             }
 
             Spacer(Modifier.height(4.dp))

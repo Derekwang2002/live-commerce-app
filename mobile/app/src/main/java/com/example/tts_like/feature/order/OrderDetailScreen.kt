@@ -64,6 +64,12 @@ fun OrderDetailScreen(navController: NavController, orderId: String) {
             }
         }
 
+        if (CommerceRepository.canPay(order)) {
+            Button(onClick = { navController.navigate(Screen.Payment.createRoute(order.orderNo)) }, modifier = Modifier.fillMaxWidth()) {
+                Text("继续支付")
+            }
+        }
+
         Button(onClick = { navController.navigate(Screen.Feed.route) }, modifier = Modifier.fillMaxWidth()) {
             Text("继续逛逛")
         }

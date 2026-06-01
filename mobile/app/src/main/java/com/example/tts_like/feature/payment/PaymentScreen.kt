@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.tts_like.data.repository.CommerceRepository
+import com.example.tts_like.data.model.OrderStatus
 import com.example.tts_like.feature.common.money
 import com.example.tts_like.navigation.Screen
 
@@ -28,6 +29,8 @@ import com.example.tts_like.navigation.Screen
 fun PaymentScreen(navController: NavController, orderNo: String) {
     val order = CommerceRepository.getOrderByNo(orderNo)
     var showTimeout by remember(orderNo) { mutableStateOf(false) }
+    var processing by remember(orderNo) { mutableStateOf(false) }
+    val paymentAvailable = order?.let(CommerceRepository::canPay) == true
 
     Column(
         modifier = Modifier
@@ -49,8 +52,14 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(order.orderNo, fontWeight = FontWeight.SemiBold)
                 Text("待支付 ${money(order.payAmount)}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                PaymentCountdown(expireAt = order.payExpireAt, onTimeout = { showTimeout = true })
-                Text("倒计时提醒订单即将失效，促使高意向用户完成最后一步。", style = MaterialTheme.typography.bodySmall)
+                PaymentCountdown(
+                    expireAt = order.payExpireAt,
+                    onTimeout = {
+                        CommerceRepository.expireOrder(orderNo)
+                        showTimeout = true
+                    },
+                )
+                Text("请在倒计时结束前完成支付，超时后订单将自动关闭。", style = MaterialTheme.typography.bodySmall)
             }
         }
 
@@ -62,20 +71,44 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
             }
         }
 
+        if (!paymentAvailable) {
+            Text(
+                text = if (order.status == OrderStatus.PAID) "订单已支付，无需重复操作" else "订单已超时，请返回订单列表重新下单",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
         Button(
             onClick = {
-                CommerceRepository.payOrder(orderNo, success = true)
-                navController.navigate(Screen.PaymentSuccess.createRoute(orderNo))
+                if (processing) return@Button
+                processing = true
+                if (CommerceRepository.payOrder(orderNo, success = true) != null) {
+                    navController.navigate(Screen.PaymentSuccess.createRoute(orderNo))
+                } else {
+                    CommerceRepository.expireOrder(orderNo)
+                    processing = false
+                    showTimeout = true
+                }
             },
+            enabled = paymentAvailable && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("确认支付")
+            Text(if (processing) "处理中..." else "确认支付")
         }
         OutlinedButton(
             onClick = {
-                CommerceRepository.payOrder(orderNo, success = false)
-                navController.navigate(Screen.PaymentFailed.createRoute(orderNo))
+                if (processing) return@OutlinedButton
+                processing = true
+                if (CommerceRepository.payOrder(orderNo, success = false) != null) {
+                    navController.navigate(Screen.PaymentFailed.createRoute(orderNo))
+                } else {
+                    CommerceRepository.expireOrder(orderNo)
+                    processing = false
+                    showTimeout = true
+                }
             },
+            enabled = paymentAvailable && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("模拟支付失败")
@@ -97,7 +130,7 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
                 }
             },
             title = { Text("支付已超时") },
-            text = { Text("订单支付时间已结束，可返回订单重新发起支付。") },
+            text = { Text("订单支付时间已结束，可返回内容流重新选购。") },
         )
     }
 }

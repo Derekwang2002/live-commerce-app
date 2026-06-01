@@ -47,9 +47,9 @@ fun CartItemRow(
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onDecrease) { Text("-") }
+                IconButton(onClick = onDecrease, enabled = item.quantity > 1 && item.invalidReason == null) { Text("-") }
                 Text(item.quantity.toString(), fontWeight = FontWeight.SemiBold)
-                IconButton(onClick = onIncrease) { Text("+") }
+                IconButton(onClick = onIncrease, enabled = item.quantity < item.sku.stock && item.invalidReason == null) { Text("+") }
             }
             Spacer(Modifier.width(2.dp))
             IconButton(onClick = onRemove) { Text("删") }

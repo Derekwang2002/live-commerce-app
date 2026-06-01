@@ -37,6 +37,7 @@ fun FeedScreen(navController: NavController) {
     val video = CommerceRepository.videos.first()
     val products = CommerceRepository.getProductsByIds(video.productIds)
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    var actionMessage by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -72,7 +73,7 @@ fun FeedScreen(navController: NavController) {
             Surface(shape = RoundedCornerShape(8.dp), tonalElevation = 2.dp) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("本场商品", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Text("商品卡小面积展示，先给高意向用户一键加购入口，再用半屏详情吸引犹豫用户。\n 图片源：upslash", style = MaterialTheme.typography.bodySmall)
+                    Text("讲解同款已整理好，可直接加购，也可以查看规格和优惠。", style = MaterialTheme.typography.bodySmall)
                 }
             }
 
@@ -81,12 +82,17 @@ fun FeedScreen(navController: NavController) {
                     product = product,
                     onOpenDetail = { selectedProduct = product },
                     onQuickAdd = {
-                        product.skus.firstOrNull { it.stock > 0 }?.let { sku ->
-                            CommerceRepository.addToCart(product, sku)
+                        val sku = product.skus.firstOrNull { it.stock > 0 }
+                        actionMessage = if (sku == null) {
+                            "当前商品暂时无货"
+                        } else {
+                            CommerceRepository.addToCart(product, sku).message
                         }
                     },
                 )
             }
+
+            actionMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall) }
 
             Button(
                 onClick = { navController.navigate(Screen.Cart.route) },
@@ -112,11 +118,14 @@ fun FeedScreen(navController: NavController) {
                     product = product,
                     onClose = { selectedProduct = null },
                     onAddToCart = { sku ->
-                        CommerceRepository.addToCart(product, sku)
-                        selectedProduct = null
+                        val result = CommerceRepository.addToCart(product, sku)
+                        actionMessage = result.message
+                        if (result.success) selectedProduct = null
                     },
                     onBuyNow = { sku ->
-                        if (CommerceRepository.checkoutBuyNow(product, sku)) {
+                        val result = CommerceRepository.checkoutBuyNow(product, sku)
+                        actionMessage = result.message
+                        if (result.success) {
                             selectedProduct = null
                             navController.navigate(Screen.OrderConfirm.route)
                         }

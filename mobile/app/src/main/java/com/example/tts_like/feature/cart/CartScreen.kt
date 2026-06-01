@@ -13,6 +13,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,6 +30,7 @@ fun CartScreen(navController: NavController) {
     val cart = CommerceRepository.cart
     val coupon = CommerceRepository.bestCouponFor(cart.selectedItems)
     val allSelected = cart.items.isNotEmpty() && cart.items.all { it.selected || it.invalidReason != null }
+    var checkoutMessage by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -46,7 +51,7 @@ fun CartScreen(navController: NavController) {
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
                         Text("购物车还是空的")
-                        Text("回到内容流看看本场推荐商品，空状态也继续承接购买意愿。", style = MaterialTheme.typography.bodySmall)
+                        Text("回到内容流看看本场推荐商品。", style = MaterialTheme.typography.bodySmall)
                         Button(onClick = { navController.navigate(Screen.Feed.route) }) {
                             Text("去逛逛")
                         }
@@ -64,6 +69,10 @@ fun CartScreen(navController: NavController) {
                 }
             }
 
+            checkoutMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+
             Button(onClick = { navController.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
                 Text("返回")
             }
@@ -76,7 +85,9 @@ fun CartScreen(navController: NavController) {
                 allSelected = allSelected,
                 onToggleAll = { CommerceRepository.toggleAllSelected(!allSelected) },
                 onCheckout = {
-                    if (CommerceRepository.checkoutSelectedItems()) {
+                    val result = CommerceRepository.checkoutSelectedItems()
+                    checkoutMessage = result.message
+                    if (result.success) {
                         navController.navigate(Screen.OrderConfirm.route)
                     }
                 },

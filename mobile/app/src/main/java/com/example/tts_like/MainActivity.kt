@@ -51,6 +51,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import com.example.tts_like.data.repository.CommerceRepository
 import androidx.navigation.compose.rememberNavController
 import com.example.tts_like.navigation.AppNavGraph
 import com.example.tts_like.ui.theme.TTSlikeTheme
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        CommerceRepository.initialize(applicationContext)
         setContent {
             TTSlikeTheme {
                 val navController = rememberNavController()

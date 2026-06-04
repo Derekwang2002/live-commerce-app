@@ -1,8 +1,12 @@
 package com.example.tts_like.data.repository
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.tts_like.data.cache.MemoryCache
+import com.example.tts_like.data.local.CommerceDatabase
+import com.example.tts_like.data.local.CommerceLocalCache
 import com.example.tts_like.data.mock.MockData
 import com.example.tts_like.data.model.Address
 import com.example.tts_like.data.model.Cart
@@ -17,10 +21,38 @@ import com.example.tts_like.data.model.Product
 import com.example.tts_like.data.model.ProductSku
 import com.example.tts_like.data.model.ProductStatus
 import com.example.tts_like.data.model.VideoContent
+import com.example.tts_like.data.remote.AddCartItemRequest
+import com.example.tts_like.data.remote.CartSelectionRequest
+import com.example.tts_like.data.remote.CommerceApi
+import com.example.tts_like.data.remote.CommerceApiClient
+import com.example.tts_like.data.remote.CreateOrderItemRequest
+import com.example.tts_like.data.remote.CreateOrderRequest
+import com.example.tts_like.data.remote.CreatePaymentRequest
+import com.example.tts_like.data.remote.UpdateCartItemRequest
+import com.example.tts_like.data.remote.toDomain
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.min
 
 object CommerceRepository {
+    private const val PRODUCT_TTL_MS = 3 * 60 * 1000L
+    private const val PRODUCT_LIST_TTL_MS = 60 * 1000L
+    private const val CART_TTL_MS = 15 * 1000L
+    private const val ORDER_TTL_MS = 30 * 1000L
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val productListCache = MemoryCache<List<Product>>()
+    private val productCache = MemoryCache<Product>()
+    private val cartCache = MemoryCache<Cart>()
+    private val orderCache = MemoryCache<List<Order>>()
+
+    private var api: CommerceApi? = null
+    private var localCache: CommerceLocalCache? = null
+    private var products by mutableStateOf(MockData.products)
+
     var cart by mutableStateOf(Cart())
         private set
 
@@ -33,16 +65,37 @@ object CommerceRepository {
     val videos: List<VideoContent> = MockData.videos
     val address: Address = MockData.mockAddress
 
+    fun initialize(context: Context, baseUrl: String = "http://10.0.2.2:3000/") {
+        if (api != null && localCache != null) return
+        api = CommerceApiClient.create(baseUrl)
+        localCache = CommerceLocalCache(CommerceDatabase.get(context).cacheDao())
+        scope.launch(Dispatchers.IO) {
+            restoreOfflineSnapshots()
+            refreshProducts(videos.flatMap { it.productIds }.distinct())
+            refreshCart()
+            refreshOrders()
+        }
+    }
+
     fun getProductsByIds(ids: List<String>): List<Product> {
-        return ids.mapNotNull { id -> MockData.products.find { it.id == id } }
+        val cacheKey = ids.sorted().joinToString(",")
+        productListCache.get(cacheKey)?.let { return it }
+        val current = ids.mapNotNull { id -> products.find { it.id == id } }
+        productListCache.put(cacheKey, current, PRODUCT_LIST_TTL_MS)
+        scope.launch(Dispatchers.IO) { refreshProducts(ids) }
+        return current
     }
 
     fun getProduct(productId: String): Product? {
-        return MockData.products.find { it.id == productId }
+        productCache.get(productId)?.let { return it }
+        val product = products.find { it.id == productId }
+        if (product != null) productCache.put(productId, product, PRODUCT_TTL_MS)
+        scope.launch(Dispatchers.IO) { refreshProduct(productId) }
+        return product
     }
 
     fun recommendedProducts(excludedIds: Set<String> = emptySet()): List<Product> {
-        return MockData.products
+        return products
             .filter { it.status == ProductStatus.ON_SALE && it.skus.any { sku -> sku.stock > 0 } }
             .filterNot { it.id in excludedIds }
             .take(3)
@@ -79,6 +132,17 @@ object CommerceRepository {
             }
         }
         cart = cart.copy(items = nextItems.validateStock())
+        cartCache.put("cart", cart, CART_TTL_MS)
+        scope.launch(Dispatchers.IO) {
+            runCatching { api?.addCartItem(AddCartItemRequest(skuId = sku.id, quantity = safeQuantity)) }
+                .getOrNull()
+                ?.let { response ->
+                    val serverCart = response.toDomain()
+                    cartCache.put("cart", serverCart, CART_TTL_MS)
+                    localCache?.saveCart(response)
+                    launch(Dispatchers.Main) { cart = serverCart }
+                }
+        }
         return ActionResult(true, "已加入购物车")
     }
 
@@ -92,10 +156,35 @@ object CommerceRepository {
                 }
             }.validateStock()
         )
+        cartCache.put("cart", cart, CART_TTL_MS)
+        val item = cart.items.firstOrNull { it.id == cartItemId }
+        if (item != null) {
+            scope.launch(Dispatchers.IO) {
+                runCatching { api?.updateCartItem(cartItemId, UpdateCartItemRequest(quantity = item.quantity)) }
+                    .getOrNull()
+                    ?.let { response ->
+                        val serverCart = response.toDomain()
+                        cartCache.put("cart", serverCart, CART_TTL_MS)
+                        localCache?.saveCart(response)
+                        launch(Dispatchers.Main) { cart = serverCart }
+                    }
+            }
+        }
     }
 
     fun removeCartItem(cartItemId: String) {
         cart = cart.copy(items = cart.items.filterNot { it.id == cartItemId })
+        cartCache.put("cart", cart, CART_TTL_MS)
+        scope.launch(Dispatchers.IO) {
+            runCatching { api?.deleteCartItem(cartItemId) }
+                .getOrNull()
+                ?.let { response ->
+                    val serverCart = response.toDomain()
+                    cartCache.put("cart", serverCart, CART_TTL_MS)
+                    localCache?.saveCart(response)
+                    launch(Dispatchers.Main) { cart = serverCart }
+                }
+        }
     }
 
     fun toggleSelected(cartItemId: String) {
@@ -108,6 +197,8 @@ object CommerceRepository {
                 }
             }
         )
+        cartCache.put("cart", cart, CART_TTL_MS)
+        syncSelection(listOf(cartItemId), cart.items.firstOrNull { it.id == cartItemId }?.selected ?: false)
     }
 
     fun toggleAllSelected(selected: Boolean) {
@@ -116,6 +207,8 @@ object CommerceRepository {
                 if (item.invalidReason == null) item.copy(selected = selected) else item
             }
         )
+        cartCache.put("cart", cart, CART_TTL_MS)
+        syncSelection(cart.items.filter { it.invalidReason == null }.map { it.id }, selected)
     }
 
     fun checkoutSelectedItems(): ActionResult {
@@ -179,10 +272,22 @@ object CommerceRepository {
         )
 
         orders = listOf(order) + orders
+        orderCache.put("orders", orders, ORDER_TTL_MS)
         cart = cart.copy(items = cart.items.filterNot { cartItem ->
             checkoutItems.any { it.id == cartItem.id }
         })
         pendingCheckoutItems = emptyList()
+        scope.launch(Dispatchers.IO) {
+            val requestItems = checkoutItems.map {
+                CreateOrderItemRequest(skuId = it.skuId, quantity = it.quantity)
+            }
+            runCatching { api?.createOrder(CreateOrderRequest(items = requestItems)) }
+                .getOrNull()
+                ?.let { response ->
+                    refreshOrders()
+                    localCache?.saveOrders(com.example.tts_like.data.remote.OrdersResponse(listOf(response)))
+                }
+        }
         return order
     }
 
@@ -201,6 +306,16 @@ object CommerceRepository {
         val paidAt = if (success) System.currentTimeMillis() else null
         orders = orders.map {
             if (it.orderNo == orderNo) it.copy(status = nextStatus, paidAt = paidAt) else it
+        }
+        orderCache.put("orders", orders, ORDER_TTL_MS)
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                val payment = api?.createPayment(CreatePaymentRequest(orderId = order.id))
+                if (payment != null) {
+                    if (success) api?.mockPaymentSuccess(payment.paymentNo) else api?.mockPaymentFail(payment.paymentNo)
+                }
+            }
+            refreshOrders()
         }
         return Payment(
             id = "pay_${order.id}",
@@ -221,6 +336,7 @@ object CommerceRepository {
                 order
             }
         }
+        orderCache.put("orders", orders, ORDER_TTL_MS)
     }
 
     fun isPaymentExpired(order: Order): Boolean {
@@ -267,9 +383,92 @@ object CommerceRepository {
     }
 
     internal fun resetForTesting() {
+        productListCache.clear()
+        productCache.clear()
+        cartCache.clear()
+        orderCache.clear()
+        products = MockData.products
         cart = Cart()
         orders = MockData.mockOrders
         pendingCheckoutItems = emptyList()
+    }
+
+    private suspend fun restoreOfflineSnapshots() {
+        localCache?.getProducts()?.let { response ->
+            val cachedProducts = response.products.map { it.toDomain() }
+            productListCache.put("offline", cachedProducts, PRODUCT_LIST_TTL_MS)
+            launchMain { products = cachedProducts }
+        }
+        localCache?.getCart()?.let { response ->
+            val cachedCart = response.toDomain()
+            cartCache.put("cart", cachedCart, CART_TTL_MS)
+            launchMain { cart = cachedCart }
+        }
+        localCache?.getOrders()?.let { response ->
+            val cachedOrders = response.orders.map { it.toDomain() }
+            orderCache.put("orders", cachedOrders, ORDER_TTL_MS)
+            launchMain { orders = cachedOrders }
+        }
+    }
+
+    private suspend fun refreshProducts(ids: List<String>) {
+        if (ids.isEmpty()) return
+        val response = runCatching { api?.getProductsBatch(ids.joinToString(",")) }.getOrNull() ?: return
+        val nextProducts = mergeProducts(response.products.map { it.toDomain() })
+        localCache?.saveProducts(response)
+        ids.forEach { productId ->
+            nextProducts.find { it.id == productId }?.let { productCache.put(productId, it, PRODUCT_TTL_MS) }
+        }
+        productListCache.put(ids.sorted().joinToString(","), ids.mapNotNull { id -> nextProducts.find { it.id == id } }, PRODUCT_LIST_TTL_MS)
+        launchMain { products = nextProducts }
+    }
+
+    private suspend fun refreshProduct(productId: String) {
+        val response = runCatching { api?.getProduct(productId) }.getOrNull() ?: return
+        val product = response.toDomain()
+        val nextProducts = mergeProducts(listOf(product))
+        productCache.put(productId, product, PRODUCT_TTL_MS)
+        launchMain { products = nextProducts }
+    }
+
+    private suspend fun refreshCart() {
+        val response = runCatching { api?.getCart() }.getOrNull() ?: return
+        val nextCart = response.toDomain()
+        cartCache.put("cart", nextCart, CART_TTL_MS)
+        localCache?.saveCart(response)
+        launchMain { cart = nextCart }
+    }
+
+    private suspend fun refreshOrders() {
+        val response = runCatching { api?.getOrders() }.getOrNull() ?: return
+        val nextOrders = response.orders.map { it.toDomain() }
+        orderCache.put("orders", nextOrders, ORDER_TTL_MS)
+        localCache?.saveOrders(response)
+        launchMain { orders = nextOrders }
+    }
+
+    private fun syncSelection(cartItemIds: List<String>, selected: Boolean) {
+        if (cartItemIds.isEmpty()) return
+        scope.launch(Dispatchers.IO) {
+            runCatching {
+                api?.updateSelection(CartSelectionRequest(cartItemIds = cartItemIds, selected = selected))
+            }.getOrNull()?.let { response ->
+                val serverCart = response.toDomain()
+                cartCache.put("cart", serverCart, CART_TTL_MS)
+                localCache?.saveCart(response)
+                launch(Dispatchers.Main) { cart = serverCart }
+            }
+        }
+    }
+
+    private fun mergeProducts(incoming: List<Product>): List<Product> {
+        val byId = products.associateBy { it.id }.toMutableMap()
+        incoming.forEach { byId[it.id] = it }
+        return byId.values.toList()
+    }
+
+    private suspend fun launchMain(block: () -> Unit) {
+        kotlinx.coroutines.withContext(Dispatchers.Main) { block() }
     }
 }
 

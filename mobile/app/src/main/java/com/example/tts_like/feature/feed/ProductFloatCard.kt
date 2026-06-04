@@ -1,17 +1,14 @@
 package com.example.tts_like.feature.feed
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,75 +26,62 @@ import com.example.tts_like.feature.common.ProductImage
 @Composable
 fun ProductFloatCard(
     product: Product,
+    productCount: Int,
     onOpenDetail: () -> Unit,
-    onQuickAdd: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val available = product.status == ProductStatus.ON_SALE && product.skus.any { it.stock > 0 }
 
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        tonalElevation = 4.dp,
+        modifier = modifier
+            .width(204.dp)
+            .clickable(onClick = onOpenDetail),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White.copy(alpha = 0.96f),
+        shadowElevation = 8.dp,
     ) {
-        Row(
-            modifier = Modifier.padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            ProductImage(
-                url = product.coverUrl,
-                contentDescription = product.title,
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-            )
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = product.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+        Column {
+            Row(
+                modifier = Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                ProductImage(
+                    url = product.coverUrl,
+                    contentDescription = product.title,
+                    modifier = Modifier
+                        .size(66.dp)
+                        .clip(RoundedCornerShape(8.dp)),
                 )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = product.tags.joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "¥${product.price.toInt()}  已售 ${product.salesCount}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                val availableStock = product.skus.filter { it.stock > 0 }.minOfOrNull { it.stock }
-                if (!available) {
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        text = if (product.status != ProductStatus.ON_SALE) "商品已下架" else "暂时无货",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFB3261E),
+                        text = "讲解中",
+                        color = Color(0xFFFF5A1F),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
                     )
-                } else if (availableStock != null && availableStock <= product.lowStockThreshold) {
                     Text(
-                        text = "库存紧张，最低仅剩 $availableStock 件",
+                        text = product.title,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFB3261E),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = if (available) "¥${product.price.toInt()}" else "暂时无货",
+                        color = if (available) Color(0xFFE64A19) else Color(0xFFB3261E),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
                     )
                 }
             }
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Button(onClick = onQuickAdd, enabled = available) {
-                    Text("加购")
-                }
-                OutlinedButton(onClick = onOpenDetail) {
-                    Text("详情")
-                }
+            Surface(color = Color(0xFFFFF1E8)) {
+                Text(
+                    text = "购物袋共 $productCount 件商品  ·  点击查看",
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                    color = Color(0xFF9A3412),
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
         }
     }

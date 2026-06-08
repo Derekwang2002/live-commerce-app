@@ -9,5 +9,6 @@ dependencies {
     DOMAIN
     DATA
     CORE
+    FEATURE_COMMERCE
     media3Dependency()
 }

@@ -24,7 +24,7 @@ class MockLiveRoomApi : LiveRoomApi {
                 LiveComment(id = "c4", userName = "可可", text = "点赞了")
             ),
             currentProduct = LiveProduct(
-                id = "p1",
+                id = "prod_1",
                 name = "夏季轻薄外套",
                 priceText = "¥39.90"
             )

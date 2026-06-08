@@ -9,5 +9,6 @@ dependencies {
     DATA
     CORE
     COMMON_COMPOSABLE
+    FEATURE_COMMERCE
     media3Dependency()
 }

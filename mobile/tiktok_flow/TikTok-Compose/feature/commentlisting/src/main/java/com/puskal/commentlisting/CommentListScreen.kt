@@ -66,7 +66,9 @@ private fun CommentList.Comment.commentReactionKey(): String {
 @Composable
 fun CommentListScreen(
     viewModel: CommentListViewModel = hiltViewModel(),
-    onClickCancel: () -> Unit
+    onClickCancel: () -> Unit,
+    onClickSearchRecommendation: (String) -> Unit = {},
+    onClickAuthorRecommend: (String) -> Unit = {}
 ) {
     val viewState by viewModel.viewState.collectAsState()
     val recommendation = viewState?.searchRecommendation
@@ -77,14 +79,18 @@ fun CommentListScreen(
         12.dp.Space()
         CommentHeader(
             recommendation = recommendation,
-            onClickCancel = onClickCancel
+            onClickCancel = onClickCancel,
+            onClickSearchRecommendation = onClickSearchRecommendation
         )
 
         6.dp.Space()
         LazyColumn(contentPadding = PaddingValues(top = 4.dp), modifier = Modifier.weight(1f)) {
             recommendation?.let {
                 item {
-                    SearchRecommendationComment(it)
+                    SearchRecommendationComment(
+                        recommendation = it,
+                        onClickAuthorRecommend = onClickAuthorRecommend
+                    )
                 }
             }
             viewState?.comments?.comments?.let { comments ->
@@ -108,7 +114,8 @@ fun CommentListScreen(
 @Composable
 private fun CommentHeader(
     recommendation: VideoModel.SearchRecommendation?,
-    onClickCancel: () -> Unit
+    onClickCancel: () -> Unit,
+    onClickSearchRecommendation: (String) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -126,7 +133,9 @@ private fun CommentHeader(
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = SubTextColor,
-                modifier = Modifier.align(Alignment.CenterStart)
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .clickable { onClickSearchRecommendation(it.searchUrlKey) }
             )
         }
         Icon(
@@ -198,7 +207,10 @@ private fun CommentDislikeButton(
 }
 
 @Composable
-private fun SearchRecommendationComment(recommendation: VideoModel.SearchRecommendation) {
+private fun SearchRecommendationComment(
+    recommendation: VideoModel.SearchRecommendation,
+    onClickAuthorRecommend: (String) -> Unit
+) {
     var reaction by rememberSaveable(recommendation.commentText, recommendation.label) {
         mutableStateOf(CommentReaction.None)
     }
@@ -270,10 +282,12 @@ private fun SearchRecommendationComment(recommendation: VideoModel.SearchRecomme
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFF0068B7),
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.constrainAs(link) {
-                start.linkTo(comment.start)
-                top.linkTo(comment.bottom, margin = 5.dp)
-            }
+            modifier = Modifier
+                .clickable { onClickAuthorRecommend(recommendation.authorRecommendUrlKey) }
+                .constrainAs(link) {
+                    start.linkTo(comment.start)
+                    top.linkTo(comment.bottom, margin = 5.dp)
+                }
         )
 
         Text(
@@ -434,20 +448,8 @@ fun CommentUserField(
             .padding(horizontal = 16.dp)
             .imePadding()
     ) {
-        HighlightedEmoji.values().toList().let {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                it.forEach { emoji ->
-                    Text(text = emoji.unicode, fontSize = 25.sp)
-                }
-            }
-        }
-
         Row(
+            modifier = Modifier.padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(0.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {

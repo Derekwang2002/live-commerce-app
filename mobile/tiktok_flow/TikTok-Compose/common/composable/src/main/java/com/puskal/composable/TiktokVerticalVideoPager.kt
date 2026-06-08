@@ -72,6 +72,7 @@ fun TikTokVerticalVideoPager(
     onClickAudio: (VideoModel) -> Unit,
     onClickUser: (userId: Long) -> Unit,
     onClickLivePreview: (roomId: String) -> Unit = {},
+    onClickActionLink: ((url: String) -> Unit)? = null,
     feedScene: FeedScene? = null,
     onClickFavourite: (isFav: Boolean) -> Unit = {},
     onClickShare: (() -> Unit)? = null
@@ -103,7 +104,7 @@ fun TikTokVerticalVideoPager(
         flingBehavior = fling,
         beyondBoundsPageCount = 1,
         modifier = modifier
-    ) {
+    ) { pageIndex ->
         var pauseButtonVisibility by remember { mutableStateOf(false) }
         var doubleTapState by remember {
             mutableStateOf(
@@ -116,16 +117,23 @@ fun TikTokVerticalVideoPager(
         }
 
         Box(modifier = Modifier.fillMaxSize()) {
-            if (videos[it].livePreview != null) {
+            if (videos[pageIndex].livePreview != null) {
                 LivePreviewCard(
-                    item = videos[it],
-                    isActive = pagerState.currentPage == it,
-                    onClickLivePreview = onClickLivePreview
+                    item = videos[pageIndex],
+                    isActive = pagerState.currentPage == pageIndex,
+                    onClickLivePreview = { roomId ->
+                        onClickLivePreview(roomId)
+                        videos.closestNonLivePage(pageIndex)?.let { fallbackPage ->
+                            coroutineScope.launch {
+                                pagerState.scrollToPage(fallbackPage)
+                            }
+                        }
+                    }
                 )
             } else {
-                VideoPlayer(video = videos[it], pagerState = pagerState, pageIndex = it, player = feedScene?.getPlayer(it), onSingleTap = { player ->
+                VideoPlayer(video = videos[pageIndex], pagerState = pagerState, pageIndex = pageIndex, player = feedScene?.getPlayer(pageIndex), onSingleTap = { player ->
                     if (feedScene != null) {
-                        val isPlaying = feedScene.onVideoTapped(it)
+                        val isPlaying = feedScene.onVideoTapped(pageIndex)
                         pauseButtonVisibility = !isPlaying
                     } else {
                         pauseButtonVisibility = player.isPlaying
@@ -134,7 +142,7 @@ fun TikTokVerticalVideoPager(
                 },
                     onDoubleTap = { exoPlayer, offset ->
                         coroutineScope.launch {
-                            videos[it].currentViewerInteraction.isLikedByYou = true
+                            videos[pageIndex].currentViewerInteraction.isLikedByYou = true
                             val rotationAngle = (-10..10).random()
                             doubleTapState = Triple(offset, true, rotationAngle.toFloat())
                             delay(400)
@@ -147,7 +155,7 @@ fun TikTokVerticalVideoPager(
                 )
             }
 
-            if (videos[it].livePreview == null) {
+            if (videos[pageIndex].livePreview == null) {
                 Column(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -163,7 +171,7 @@ fun TikTokVerticalVideoPager(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f),
-                            item = videos[it],
+                            item = videos[pageIndex],
                             showUploadDate=showUploadDate,
                             onClickAudio = onClickAudio,
                             onClickUser = onClickUser,
@@ -171,7 +179,7 @@ fun TikTokVerticalVideoPager(
 
                         SideItems(
                             modifier = Modifier,
-                            videos[it],
+                            videos[pageIndex],
                             doubleTabState = doubleTapState,
                             onclickComment = onclickComment,
                             onClickUser = onClickUser,
@@ -180,14 +188,15 @@ fun TikTokVerticalVideoPager(
                         )
                     }
                     if (
-                        videos[it].isAdvertisement &&
-                        videos[it].actionLinkText != null &&
-                        videos[it].actionLinkUrl != null
+                        videos[pageIndex].isAdvertisement &&
+                        videos[pageIndex].actionLinkText != null &&
+                        videos[pageIndex].actionLinkUrl != null
                     ) {
                         10.dp.Space()
                         AdActionLink(
-                            text = videos[it].actionLinkText.orEmpty(),
-                            url = videos[it].actionLinkUrl.orEmpty(),
+                            text = videos[pageIndex].actionLinkText.orEmpty(),
+                            url = videos[pageIndex].actionLinkUrl.orEmpty(),
+                            onClickActionLink = onClickActionLink,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(start = 12.dp, end = 96.dp)
@@ -250,6 +259,11 @@ private val FeedActionOverlayBottomPadding = 32.dp
 private const val LivePreviewAutoEnterMillis = 15_000L
 private const val LivePreviewCountdownMillis = 10_000L
 private const val LivePreviewCountdownStepMillis = 100L
+
+private fun List<VideoModel>.closestNonLivePage(currentPage: Int): Int? {
+    return (currentPage - 1 downTo 0).firstOrNull { this[it].livePreview == null }
+        ?: (currentPage + 1 until size).firstOrNull { this[it].livePreview == null }
+}
 
 @Composable
 private fun LivePreviewCard(
@@ -790,6 +804,7 @@ private fun AdDisclosureTag(text: String) {
 private fun AdActionLink(
     text: String,
     url: String,
+    onClickActionLink: ((url: String) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -807,10 +822,14 @@ private fun AdActionLink(
                 )
             )
             .clickable {
-                runCatching {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                }.onFailure {
-                    Log.e("AdActionLink", "open ad url failed: ${it.message}")
+                if (onClickActionLink != null) {
+                    onClickActionLink(url)
+                } else {
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }.onFailure {
+                        Log.e("AdActionLink", "open ad url failed: ${it.message}")
+                    }
                 }
             },
         contentAlignment = Alignment.Center

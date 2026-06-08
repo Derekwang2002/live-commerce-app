@@ -7,6 +7,7 @@ import androidx.navigation.compose.NavHost
 import com.puskal.authentication.authenticationNavGraph
 import com.puskal.cameramedia.cameraMediaNavGraph
 import com.puskal.commentlisting.commentListingNavGraph
+import com.puskal.commerce.navigation.commerceNavGraph
 import com.puskal.core.DestinationRoute.HOME_SCREEN_ROUTE
 import com.puskal.creatorprofile.creatorProfileNavGraph
 import com.puskal.friends.friendsNavGraph
@@ -32,6 +33,7 @@ fun AppNavHost(
         modifier = modifier
     ) {
         homeNavGraph(navController)
+        commerceNavGraph(navController)
         commentListingNavGraph(navController)
         creatorProfileNavGraph(navController)
         inboxNavGraph(navController)

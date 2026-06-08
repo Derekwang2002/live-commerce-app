@@ -56,6 +56,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.puskal.composable.live.SharedLivePlayerView
+import com.puskal.commerce.navigation.navigateToProductDetail
 import com.puskal.data.model.live.LiveComment
 import com.puskal.data.model.live.LiveProduct
 import com.puskal.theme.R
@@ -157,7 +158,10 @@ fun LiveRoomScreen(
                     product = product,
                     modifier = Modifier
                         .fillMaxWidth(0.62f)
-                        .padding(bottom = 12.dp)
+                        .padding(bottom = 12.dp),
+                    onClick = {
+                        navController.navigateToProductDetail(product.id)
+                    }
                 )
             }
 
@@ -344,10 +348,11 @@ private fun LiveCapsuleTag(text: String) {
 @Composable
 private fun LiveProductFloatingCard(
     product: LiveProduct,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
 ) {
     Surface(
-        modifier = modifier,
+        modifier = modifier.clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         color = Color.Black.copy(alpha = 0.46f)
     ) {
@@ -518,11 +523,6 @@ private fun LiveBottomInputBar(
                             }
                             innerTextField()
                         }
-                        Icon(
-                            painter = androidx.compose.ui.res.painterResource(id = R.drawable.ic_emoji),
-                            contentDescription = "表情",
-                            tint = Color.White.copy(alpha = 0.88f)
-                        )
                     }
                 }
             )

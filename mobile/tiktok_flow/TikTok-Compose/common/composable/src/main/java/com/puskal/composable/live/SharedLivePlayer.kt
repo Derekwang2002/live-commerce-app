@@ -17,6 +17,7 @@ import androidx.media3.ui.PlayerView
 
 object SharedLivePlayerStore {
     private val players = mutableMapOf<String, ExoPlayer>()
+    private val activeSessions = mutableMapOf<String, Any>()
 
     fun getOrCreate(context: Context, url: String): ExoPlayer {
         return players.getOrPut(url) {
@@ -34,8 +35,28 @@ object SharedLivePlayerStore {
                 player.volume = 0f
                 player.playWhenReady = false
                 player.pause()
+                activeSessions.remove(playerUrl)
             }
         }
+    }
+
+    fun play(url: String, session: Any, volume: Float) {
+        val player = players[url] ?: return
+        pauseAllExcept(url)
+        activeSessions[url] = session
+        player.volume = volume
+        player.playWhenReady = true
+        player.play()
+    }
+
+    fun pause(url: String, session: Any) {
+        if (activeSessions[url] != session) return
+        players[url]?.let { player ->
+            player.volume = 0f
+            player.playWhenReady = false
+            player.pause()
+        }
+        activeSessions.remove(url)
     }
 }
 
@@ -51,6 +72,7 @@ fun SharedLivePlayerView(
     val player = remember(url) {
         SharedLivePlayerStore.getOrCreate(context, url)
     }
+    val session = remember(url) { Any() }
     val playerView = remember(player) {
         PlayerView(context).apply {
             this.player = player
@@ -65,19 +87,15 @@ fun SharedLivePlayerView(
 
     LaunchedEffect(player, url, isPlaying, volume) {
         if (isPlaying) {
-            SharedLivePlayerStore.pauseAllExcept(url)
-            player.volume = volume
-            player.playWhenReady = true
-            player.play()
+            SharedLivePlayerStore.play(url, session, volume)
         } else {
-            player.volume = 0f
-            player.playWhenReady = false
-            player.pause()
+            SharedLivePlayerStore.pause(url, session)
         }
     }
 
-    DisposableEffect(playerView) {
+    DisposableEffect(playerView, url, session) {
         onDispose {
+            SharedLivePlayerStore.pause(url, session)
             playerView.player = null
         }
     }

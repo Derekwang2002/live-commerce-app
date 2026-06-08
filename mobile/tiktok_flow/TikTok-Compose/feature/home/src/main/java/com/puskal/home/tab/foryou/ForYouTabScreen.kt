@@ -17,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.puskal.composable.TikTokVerticalVideoPager
 import com.puskal.composable.feed.rememberFeedScene
+import com.puskal.commerce.navigation.navigateToCommerceEntry
 import com.puskal.core.DestinationRoute.COMMENT_BOTTOM_SHEET_ROUTE
 import com.puskal.core.DestinationRoute.CREATOR_PROFILE_ROUTE
 import com.puskal.core.DestinationRoute.LIVE_ROOM_ROUTE
@@ -74,7 +75,10 @@ fun ForYouTabScreen(
                 onClickLike = { s: String, b: Boolean -> },
                 onclickFavourite = {},
                 onClickAudio = {},
-                onClickUser = { userId -> navController.navigate("$CREATOR_PROFILE_ROUTE/$userId") }
+                onClickUser = { userId -> navController.navigate("$CREATOR_PROFILE_ROUTE/$userId") },
+                onClickActionLink = { url ->
+                    navController.navigateToCommerceEntry(url)
+                }
             )
         }
     }

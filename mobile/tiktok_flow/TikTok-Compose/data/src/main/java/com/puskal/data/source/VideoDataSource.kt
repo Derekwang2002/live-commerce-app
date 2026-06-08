@@ -90,7 +90,7 @@ object VideoDataSource {
                 hasTag = listOf(),
                 isAdvertisement = true,
                 actionLinkText = "\u67e5\u770b\u8be6\u60c5",
-                actionLinkUrl = "tiktokflow://ad/$adId"
+                actionLinkUrl = "tiktokflow://product/prod_1"
             )
         }
     }
@@ -127,8 +127,8 @@ object VideoDataSource {
                 searchText = "荣耀600",
                 commentText = "点击了解全新荣耀600系列",
                 label = "作者推荐",
-                searchUrlKey = "honor_600_search_url",
-                authorRecommendUrlKey = "author_recommend_url"
+                searchUrlKey = "search:荣耀600",
+                authorRecommendUrlKey = "recommend:prod_1"
             )
             else -> null
         }

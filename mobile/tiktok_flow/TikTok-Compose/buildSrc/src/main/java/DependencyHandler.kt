@@ -96,6 +96,7 @@ fun DependencyHandler.moduleDependencies() {
     COMMON_THEME
     COMMON_COMPOSABLE
     FEATURE_HOME
+    FEATURE_COMMERCE
     FEATURE_COMMENT_LISTING
     FEATURE_CREATOR_PROFILE
     FEATURE_INBOX
@@ -125,6 +126,9 @@ val DependencyHandler.COMMON_THEME
 
 val DependencyHandler.FEATURE_HOME
     get() = implementation(project(mapOf("path" to ":feature:home")))
+
+val DependencyHandler.FEATURE_COMMERCE
+    get() = implementation(project(mapOf("path" to ":feature:commerce")))
 
 val DependencyHandler.FEATURE_COMMENT_LISTING
     get() = implementation(project(mapOf("path" to ":feature:commentlisting")))

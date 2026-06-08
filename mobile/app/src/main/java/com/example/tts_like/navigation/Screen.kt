@@ -11,4 +11,10 @@ sealed class Screen(val route: String) {
     object Payment : Screen("payment/{orderNo}") {
         fun createRoute(orderNo: String) = "payment/$orderNo"
     }
+    object PaymentSuccess : Screen("payment_success/{orderNo}") {
+        fun createRoute(orderNo: String) = "payment_success/$orderNo"
+    }
+    object PaymentFailed : Screen("payment_failed/{orderNo}") {
+        fun createRoute(orderNo: String) = "payment_failed/$orderNo"
+    }
 }

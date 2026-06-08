@@ -14,6 +14,10 @@ data class Product(
     val aiTitle: String? = null,
     val aiSellingPoints: List<String> = emptyList(),
     val aiScript: String? = null,
+    val tags: List<String> = emptyList(),
+    val guaranteeTags: List<String> = emptyList(),
+    val couponText: String? = null,
+    val lowStockThreshold: Int = 5,
 )
 
 enum class ProductStatus { ON_SALE, OFF_SALE }

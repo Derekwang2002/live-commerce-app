@@ -38,7 +38,7 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("模拟支付", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Text("订单支付", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
         if (order == null) {
             Text("订单不存在：$orderNo")
@@ -66,8 +66,8 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
         Surface(modifier = Modifier.fillMaxWidth(), tonalElevation = 2.dp) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("支付方式", fontWeight = FontWeight.SemiBold)
-                Text("Mock Pay · 默认支付")
-                Text("当前为课题演示，不接入真实支付。")
+                Text("沙箱支付 · 默认通道")
+                Text("当前为演示环境，用沙箱通道验证支付成功与失败链路。")
             }
         }
 
@@ -111,7 +111,7 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
             enabled = paymentAvailable && !processing,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("模拟支付失败")
+            Text("演示支付失败场景")
         }
         OutlinedButton(onClick = { navController.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
             Text("返回")

@@ -42,7 +42,7 @@ fun PaymentFailedScreen(navController: NavController, orderNo: String) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(it.orderNo, fontWeight = FontWeight.SemiBold)
                     Text("待支付 ${money(it.payAmount)}", fontWeight = FontWeight.Bold)
-                    Text("失败原因：模拟支付失败或支付超时", style = MaterialTheme.typography.bodySmall)
+                    Text("失败原因：沙箱支付失败或支付超时", style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

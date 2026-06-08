@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import com.example.tts_like.data.model.Product
 import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.product.ProductDetailSheet
 import com.example.tts_like.navigation.Screen
+import kotlinx.coroutines.delay
 
 @Composable
 fun FeedScreen(navController: NavController) {
@@ -44,6 +46,13 @@ fun FeedScreen(navController: NavController) {
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     var actionMessage by remember { mutableStateOf<String?>(null) }
     val featuredProduct = products.firstOrNull()
+
+    LaunchedEffect(actionMessage) {
+        if (actionMessage != null) {
+            delay(1800)
+            actionMessage = null
+        }
+    }
 
     Box(
         modifier = Modifier

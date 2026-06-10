@@ -1,0 +1,96 @@
+<resources>
+    <string name="app_name">TikTok 中文版</string>
+
+    <string name="home">首页</string>
+    <string name="friends">朋友</string>
+    <string name="inbox">消息</string>
+    <string name="profile">我的</string>
+
+    <string name="following">关注</string>
+    <string name="for_you">推荐</string>
+    <string name="see_more">查看更多</string>
+    <string name="hide">收起</string>
+
+    <string name="messages_and_notification_will">消息和通知会显示在这里</string>
+    <string name="sign_up">注册</string>
+    <string name="comments">条评论</string>
+    <string name="trending_creators">热门创作者</string>
+    <string name="follow_and_account_to_see">关注账号后，这里会显示他们的最新视频。</string>
+    <string name="follow">关注</string>
+    <string name="add_comment">添加评论…</string>
+
+    <string name="followers">粉丝</string>
+    <string name="likes">获赞</string>
+    <string name="reply">回复</string>
+
+    <string name="this_users_liked_videos">该用户喜欢的视频已设为私密</string>
+    <string name="videos_liked_by">喜欢的视频来自</string>
+    <string name="currently_hidden">当前已隐藏</string>
+    <string name="no_bio_yet">暂无简介</string>
+
+    <string name="find_related_content">查找相关内容</string>
+    <string name="search">搜索</string>
+
+    <string name="message_and_notifications_will_appear_here">消息和通知会显示在这里</string>
+
+    <string name="login_or_sign_up">登录或注册</string>
+    <string name="login_in_to_your_existing_account">登录已有账号，或注册一个新账号。</string>
+    <string name="use_phone_email_username">使用手机号 / 邮箱 / 用户名</string>
+    <string name="continue_with_facebook">使用 Facebook 继续</string>
+    <string name="continue_with_google">使用 Google 继续</string>
+    <string name="continue_with_twitter">使用 Twitter 继续</string>
+    <string name="terms_of_service">服务条款</string>
+    <string name="privacy_policy">隐私政策</string>
+    <string name="phone_number_info">你的手机号将用于优化体验，包括帮你连接可能认识的人、个性化广告等。使用短信注册时，可能产生短信费用。</string>
+    <string name="learn_more">了解更多</string>
+    <string name="send_code">发送验证码</string>
+    <string name="phone">手机号</string>
+    <string name="email_username">邮箱 / 用户名</string>
+    <string name="phone_number">手机号码</string>
+    <string name="enter_email_address_or_username">输入邮箱地址或用户名</string>
+    <string name="next">下一步</string>
+    <string name="by_continuing_you_agree">继续即表示你同意我们的</string>
+    <string name="and_acknowledge_that_you_have">并确认你已阅读我们的</string>
+    <string name="to_learn_how_we_collect">以了解我们如何收集、使用和分享你的数据。</string>
+    <string name="and_confirm_that_you_have_read">并确认你已阅读 TikTok 的</string>
+
+    <string name="sign_up_for_an_account">注册账号</string>
+
+    <string name="settings_and_privacy">设置与隐私</string>
+    <string name="account">账号</string>
+    <string name="my_account">我的账号</string>
+    <string name="live">直播</string>
+    <string name="playback">播放</string>
+    <string name="language">语言</string>
+    <string name="free_up_space">释放空间</string>
+    <string name="data_saver">省流量模式</string>
+    <string name="wallpaper">壁纸</string>
+    <string name="report_a_problem">反馈问题</string>
+    <string name="support">帮助与支持</string>
+    <string name="terms_and_policies">条款与政策</string>
+
+    <string name="allow_tiktok_to_access_your">允许 TikTok 访问你的相机和麦克风</string>
+    <string name="take_photos_record_videos_or_preview">用于拍照、录制视频或预览相机特效。</string>
+    <string name="you_can_change_preference_in_setting">你可以随时在设备设置中更改偏好。</string>
+    <string name="access_camera">访问相机</string>
+    <string name="access_microhpone">访问麦克风</string>
+    <string name="effects">特效</string>
+    <string name="camera">拍摄</string>
+    <string name="story">日常</string>
+    <string name="templates">模板</string>
+    <string name="upload">上传</string>
+    <string name="photo">照片</string>
+    <string name="video">视频</string>
+    <string name="text">文字</string>
+    <string name="shoot_without_microphone">无麦克风拍摄</string>
+    <string name="record_videos_and_experiences_different">录制视频并体验不同视觉特效。</string>
+    <string name="add_sound">添加音乐</string>
+    <string name="flip">翻转</string>
+    <string name="speed">速度</string>
+    <string name="beauty">美颜</string>
+    <string name="filters">滤镜</string>
+    <string name="mirror">镜像</string>
+    <string name="timer">倒计时</string>
+    <string name="flash">闪光灯</string>
+    <string name="upload_photos">上传照片</string>
+</resources>

@@ -17,15 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.common.money
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun PaymentFailedScreen(navController: NavController, orderNo: String) {
-    val order = CommerceRepository.getOrderByNo(orderNo)
-    val retryAvailable = order?.let(CommerceRepository::canPay) == true
+fun PaymentFailedScreen(navController: NavController, orderNo: String, viewModel: PaymentFailedViewModel = viewModel()) {
+    val order = viewModel.orderByNo(orderNo)
+    val retryAvailable = order?.let(viewModel::canPay) == true
 
     Column(
         modifier = Modifier

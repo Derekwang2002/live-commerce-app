@@ -15,14 +15,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.common.money
 import com.example.tts_like.feature.common.shortTime
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun OrderListScreen(navController: NavController) {
+fun OrderListScreen(navController: NavController, viewModel: OrderListViewModel = viewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -32,14 +32,14 @@ fun OrderListScreen(navController: NavController) {
     ) {
         Text("订单列表", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
 
-        CommerceRepository.orders.forEach { order ->
+        viewModel.orders.forEach { order ->
             Surface(modifier = Modifier.fillMaxWidth(), tonalElevation = 2.dp) {
                 Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(order.orderNo, fontWeight = FontWeight.SemiBold)
                     Text("状态：${order.status} · ${shortTime(order.createdAt)}", style = MaterialTheme.typography.bodySmall)
                     Text("${order.items.firstOrNull()?.productTitle ?: "商品"} 等 ${order.items.size} 件")
                     Text("实付款 ${money(order.payAmount)}", fontWeight = FontWeight.Bold)
-                    if (CommerceRepository.canPay(order)) {
+                    if (viewModel.canPay(order)) {
                         Button(onClick = { navController.navigate(Screen.Payment.createRoute(order.orderNo)) }, modifier = Modifier.fillMaxWidth()) {
                             Text("继续支付")
                         }

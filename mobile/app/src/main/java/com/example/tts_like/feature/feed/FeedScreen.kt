@@ -32,17 +32,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.tts_like.data.model.Product
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.product.ProductDetailSheet
 import com.example.tts_like.navigation.Screen
 import kotlinx.coroutines.delay
 
 @Composable
-fun FeedScreen(navController: NavController) {
-    val video = CommerceRepository.videos.first()
-    val products = CommerceRepository.getProductsByIds(video.productIds)
+fun FeedScreen(navController: NavController, viewModel: FeedViewModel = viewModel()) {
+    val video = viewModel.video
+    val products = viewModel.productsForCurrentVideo()
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     var actionMessage by remember { mutableStateOf<String?>(null) }
     val featuredProduct = products.firstOrNull()
@@ -111,7 +111,7 @@ fun FeedScreen(navController: NavController) {
         }
 
         LiveBottomBar(
-            cartCount = CommerceRepository.cart.totalCount,
+            cartCount = viewModel.cartCount,
             onOpenCart = { navController.navigate(Screen.Cart.route) },
             onOpenOrders = { navController.navigate(Screen.OrderList.route) },
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -145,12 +145,12 @@ fun FeedScreen(navController: NavController) {
                 product = product,
                 onClose = { selectedProduct = null },
                 onAddToCart = { sku ->
-                    val result = CommerceRepository.addToCart(product, sku)
+                    val result = viewModel.addToCart(product, sku)
                     actionMessage = result.message
                     if (result.success) selectedProduct = null
                 },
                 onBuyNow = { sku ->
-                    val result = CommerceRepository.checkoutBuyNow(product, sku)
+                    val result = viewModel.checkoutBuyNow(product, sku)
                     actionMessage = result.message
                     if (result.success) {
                         selectedProduct = null

@@ -15,14 +15,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.common.shortTime
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun OrderDetailScreen(navController: NavController, orderId: String) {
-    val order = CommerceRepository.getOrderById(orderId)
+fun OrderDetailScreen(navController: NavController, orderId: String, viewModel: OrderDetailViewModel = viewModel()) {
+    val order = viewModel.orderById(orderId)
 
     Column(
         modifier = Modifier
@@ -64,7 +64,7 @@ fun OrderDetailScreen(navController: NavController, orderId: String) {
             }
         }
 
-        if (CommerceRepository.canPay(order)) {
+        if (viewModel.canPay(order)) {
             Button(onClick = { navController.navigate(Screen.Payment.createRoute(order.orderNo)) }, modifier = Modifier.fillMaxWidth()) {
                 Text("继续支付")
             }

@@ -19,18 +19,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.data.model.OrderStatus
 import com.example.tts_like.feature.common.money
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun PaymentScreen(navController: NavController, orderNo: String) {
-    val order = CommerceRepository.getOrderByNo(orderNo)
+fun PaymentScreen(navController: NavController, orderNo: String, viewModel: PaymentViewModel = viewModel()) {
+    val order = viewModel.orderByNo(orderNo)
     var showTimeout by remember(orderNo) { mutableStateOf(false) }
     var processing by remember(orderNo) { mutableStateOf(false) }
-    val paymentAvailable = order?.let(CommerceRepository::canPay) == true
+    val paymentAvailable = order?.let(viewModel::canPay) == true
 
     Column(
         modifier = Modifier
@@ -55,7 +55,7 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
                 PaymentCountdown(
                     expireAt = order.payExpireAt,
                     onTimeout = {
-                        CommerceRepository.expireOrder(orderNo)
+                        viewModel.expireOrder(orderNo)
                         showTimeout = true
                     },
                 )
@@ -83,10 +83,10 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
             onClick = {
                 if (processing) return@Button
                 processing = true
-                if (CommerceRepository.payOrder(orderNo, success = true) != null) {
+                if (viewModel.pay(orderNo, success = true) != null) {
                     navController.navigate(Screen.PaymentSuccess.createRoute(orderNo))
                 } else {
-                    CommerceRepository.expireOrder(orderNo)
+                    viewModel.expireOrder(orderNo)
                     processing = false
                     showTimeout = true
                 }
@@ -100,10 +100,10 @@ fun PaymentScreen(navController: NavController, orderNo: String) {
             onClick = {
                 if (processing) return@OutlinedButton
                 processing = true
-                if (CommerceRepository.payOrder(orderNo, success = false) != null) {
+                if (viewModel.pay(orderNo, success = false) != null) {
                     navController.navigate(Screen.PaymentFailed.createRoute(orderNo))
                 } else {
-                    CommerceRepository.expireOrder(orderNo)
+                    viewModel.expireOrder(orderNo)
                     processing = false
                     showTimeout = true
                 }

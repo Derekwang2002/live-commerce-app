@@ -20,16 +20,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.tts_like.data.model.Order
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.common.money
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun OrderConfirmScreen(navController: NavController) {
-    val pendingItems = CommerceRepository.pendingCheckoutItems
-    val previewOrder = buildPreviewOrder()
+fun OrderConfirmScreen(navController: NavController, viewModel: OrderConfirmViewModel = viewModel()) {
+    val pendingItems = viewModel.pendingItems
+    val previewOrder = buildPreviewOrder(viewModel)
     var submitting by remember { mutableStateOf(false) }
     var submitError by remember { mutableStateOf<String?>(null) }
 
@@ -86,12 +86,12 @@ fun OrderConfirmScreen(navController: NavController) {
             onClick = {
                 if (submitting) return@Button
                 submitting = true
-                submitError = CommerceRepository.pendingCheckoutError()
+                submitError = viewModel.pendingCheckoutError()
                 if (submitError != null) {
                     submitting = false
                     return@Button
                 }
-                val order = CommerceRepository.createOrderFromPending()
+                val order = viewModel.createOrderFromPending()
                 if (order != null) {
                     navController.navigate(Screen.Payment.createRoute(order.orderNo))
                 } else {
@@ -114,17 +114,17 @@ fun OrderConfirmScreen(navController: NavController) {
 }
 
 @Composable
-private fun buildPreviewOrder(): Order? {
-    val items = CommerceRepository.pendingCheckoutItems
+private fun buildPreviewOrder(viewModel: OrderConfirmViewModel): Order? {
+    val items = viewModel.pendingItems
     if (items.isEmpty()) return null
     val total = items.sumOf { it.sku.price * it.quantity }
-    val coupon = CommerceRepository.bestCouponFor(items)
+    val coupon = viewModel.bestCoupon()
     val shipping = if (total >= 99.0) 0.0 else 8.0
     return Order(
         id = "preview",
         orderNo = "PREVIEW",
         userId = "user_1",
-        address = CommerceRepository.address,
+        address = viewModel.address,
         items = items.mapIndexed { index, item ->
             com.example.tts_like.data.model.OrderItem(
                 id = "preview_$index",

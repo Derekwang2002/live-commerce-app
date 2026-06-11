@@ -17,15 +17,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.feature.common.money
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun PaymentSuccessScreen(navController: NavController, orderNo: String) {
-    val order = CommerceRepository.getOrderByNo(orderNo)
-    val recommended = CommerceRepository.recommendedProducts(order?.items?.map { it.productId }?.toSet() ?: emptySet())
+fun PaymentSuccessScreen(navController: NavController, orderNo: String, viewModel: PaymentSuccessViewModel = viewModel()) {
+    val order = viewModel.orderByNo(orderNo)
+    val recommended = viewModel.recommendedProducts(order?.items?.map { it.productId }?.toSet() ?: emptySet())
 
     Column(
         modifier = Modifier

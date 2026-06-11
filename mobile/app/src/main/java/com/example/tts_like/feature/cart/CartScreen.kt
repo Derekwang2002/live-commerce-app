@@ -21,14 +21,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.tts_like.data.repository.CommerceRepository
 import com.example.tts_like.navigation.Screen
 
 @Composable
-fun CartScreen(navController: NavController) {
-    val cart = CommerceRepository.cart
-    val coupon = CommerceRepository.bestCouponFor(cart.selectedItems)
+fun CartScreen(navController: NavController, viewModel: CartViewModel = viewModel()) {
+    val cart = viewModel.cart
+    val coupon = viewModel.bestCoupon()
     val allSelected = cart.items.isNotEmpty() && cart.items.all { it.selected || it.invalidReason != null }
     var checkoutMessage by remember { mutableStateOf<String?>(null) }
 
@@ -61,10 +61,10 @@ fun CartScreen(navController: NavController) {
                 cart.items.forEach { item ->
                     CartItemRow(
                         item = item,
-                        onToggle = { CommerceRepository.toggleSelected(item.id) },
-                        onDecrease = { CommerceRepository.updateQuantity(item.id, -1) },
-                        onIncrease = { CommerceRepository.updateQuantity(item.id, 1) },
-                        onRemove = { CommerceRepository.removeCartItem(item.id) },
+                        onToggle = { viewModel.toggleSelected(item.id) },
+                        onDecrease = { viewModel.updateQuantity(item.id, -1) },
+                        onIncrease = { viewModel.updateQuantity(item.id, 1) },
+                        onRemove = { viewModel.removeCartItem(item.id) },
                     )
                 }
             }
@@ -83,9 +83,9 @@ fun CartScreen(navController: NavController) {
                 cart = cart,
                 coupon = coupon,
                 allSelected = allSelected,
-                onToggleAll = { CommerceRepository.toggleAllSelected(!allSelected) },
+                onToggleAll = { viewModel.toggleAllSelected(!allSelected) },
                 onCheckout = {
-                    val result = CommerceRepository.checkoutSelectedItems()
+                    val result = viewModel.checkoutSelectedItems()
                     checkoutMessage = result.message
                     if (result.success) {
                         navController.navigate(Screen.OrderConfirm.route)

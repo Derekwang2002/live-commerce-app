@@ -1,31 +1,50 @@
-## 文档结构
-```bash
+# Live Commerce App
+
+直播电商购物链路示例项目：覆盖商品曝光、详情决策、加购结算到支付反馈的完整闭环。
+
+## 目录结构
+
+```
 live-commerce-app/
-├── mobile/      # 移动端
-├── backend/     # 后端
-├── admin/       # 商家后台
-├── docs/        # 项目文档
-└── docker/      # Docker 配置
+├── mobile/   # Android 客户端（Kotlin + Jetpack Compose）
+├── backend/  # 后端 API（Node.js + node:http + 内存 store）
+└── docs/     # 协作约定（git 规范等）
 ```
 
-## Git branches
-```
-main
-└── dev
-    ├── feature/ecommerce
-    └── feature/feed
-```
-详见 [Git 协作约定](docs/conventions/git.md)
+## 启动
 
-## Features
-- 移动端核心电商链路：商品浮层卡、商品详情、SKU 选择、购物车、订单确认、模拟支付。
-- 支付结果页：支持支付成功、支付失败、重新支付和订单详情查看。
-- 本地 Mock 数据闭环：商品、优惠券、购物车、订单和支付状态可在客户端内完整演示。
+### 后端
+```bash
+cd backend
+npm start          # http://localhost:3000
+npm test           # 跑接口和数据层用例
+```
 
-## Milestones
-- 5.26 周二：壳工程
-- 5.29 周五：技术方案
-- 开发 + 测试
-- 6.5 周五：总结优化
-- 6.9 周二：提交课题
-- 准备答辩
+### 移动端
+用 Android Studio 打开 `mobile/` 目录，或者命令行：
+```bash
+cd mobile
+./gradlew :app:assembleDebug          # 打包 APK
+./gradlew :app:testDebugUnitTest      # 跑单元测试
+```
+
+模拟器中后端地址默认 `http://10.0.2.2:3000/`（与本机 `localhost:3000` 对应）。
+
+## 技术栈
+
+- **Mobile**：Kotlin 2.0、Jetpack Compose、Navigation Compose、Retrofit + OkHttp、kotlinx.serialization、Coil、Room、androidx.lifecycle ViewModel。
+- **Backend**：Node.js（原生 `node:http`）、内存 store，无 ORM、无外部数据库依赖。
+
+## 分层架构
+
+```
+UI (Compose)  →  ViewModel  →  CommerceRepository  →  MemoryCache / Room / Retrofit
+```
+
+- UI 只组合 Compose 组件和响应事件，不直接读 Repository。
+- ViewModel 提供页面所需状态和动作，调用 Repository。
+- Repository 统一 mock、Room 快照、远端 API 三个数据源。
+
+## Git 协作
+
+主分支 `main`，开发分支 `dev`，功能分支从 `dev` 切。详见 [docs/conventions/git.md](docs/conventions/git.md)。
